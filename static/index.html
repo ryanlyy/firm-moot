@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI 模拟法庭</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="/static/style.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/remixicon@4.1.0/fonts/remixicon.css" rel="stylesheet">
+</head>
+<body>
+
+  <!-- ═══════════ LOGIN PAGE ═══════════ -->
+  <div id="login-page" class="min-h-screen flex items-center justify-center px-4">
+    <div class="w-full max-w-sm">
+      <div class="text-center mb-8">
+        <div class="login-icon-ring" id="login-logo-wrap">
+          <img id="login-logo-img" class="hidden" style="width:56px;height:56px;object-fit:contain;border-radius:50%" alt="Logo">
+          <i id="login-logo-icon" class="ri-scales-3-line text-4xl text-amber-500"></i>
+        </div>
+        <p id="login-firm-name" class="login-firm-name hidden"></p>
+        <h1 class="text-2xl font-extrabold tracking-tight" style="color:#111827">AI 模拟法庭</h1>
+        <p class="text-gray-500 text-sm mt-1 tracking-wide">庭前演练 · 知己知彼</p>
+      </div>
+      <div class="login-card">
+        <form id="auth-form" onsubmit="handleAuth(event)" class="space-y-5">
+          <div>
+            <label class="form-label">用户名</label>
+            <div class="relative">
+              <i class="ri-user-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm"></i>
+              <input name="username" required class="form-input pl-9" placeholder="输入用户名" autocomplete="username">
+            </div>
+          </div>
+          <div>
+            <label class="form-label">密码</label>
+            <div class="relative">
+              <i class="ri-lock-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm"></i>
+              <input name="password" type="password" required class="form-input pl-9" placeholder="输入密码" minlength="6" autocomplete="current-password">
+            </div>
+          </div>
+          <button type="submit" class="btn-primary w-full justify-center py-3" id="btn-auth">
+            <i class="ri-login-box-line"></i> 登录
+          </button>
+          <p id="auth-error" class="text-red-400 text-xs text-center hidden"></p>
+          <p class="text-gray-600 text-xs text-center mt-3">
+            <i class="ri-information-line"></i> 请联系管理员创建账号
+          </p>
+        </form>
+      </div>
+      <p class="text-center text-gray-700 text-xs mt-6">AI Moot Court &copy; 2026</p>
+    </div>
+  </div>
+
+  <!-- ═══════════ MAIN APP — SIDEBAR LAYOUT ═══════════ -->
+  <div id="main-app" class="hidden app-layout">
+
+    <!-- ── LEFT SIDEBAR ── -->
+    <aside class="sidebar">
+      <!-- Logo -->
+      <div class="sidebar-logo">
+        <div class="sidebar-logo-icon" id="sidebar-logo-wrap">
+          <img id="sidebar-logo-img" class="hidden" style="width:40px;height:40px;object-fit:contain;border-radius:6px" alt="Logo">
+          <i id="sidebar-logo-icon" class="ri-scales-3-line text-xl text-amber-400"></i>
+        </div>
+        <div>
+          <div id="sidebar-firm-name" class="sidebar-firm-label"></div>
+          <div class="font-extrabold text-sm nav-logo">AI 模拟法庭</div>
+        </div>
+      </div>
+
+      <!-- Nav Items -->
+      <nav class="sidebar-nav">
+        <div class="sidebar-section-label">功能导航</div>
+        <button onclick="showView('cases')" id="nav-cases" class="sidebar-item active">
+          <i class="ri-folder-3-line sidebar-item-icon"></i>
+          <span>案件管理</span>
+        </button>
+        <button onclick="showView('simulate')" id="nav-simulate" class="sidebar-item">
+          <i class="ri-government-line sidebar-item-icon"></i>
+          <span>庭审模拟</span>
+        </button>
+        <button onclick="showView('analysis')" id="nav-analysis" class="sidebar-item">
+          <i class="ri-brain-line sidebar-item-icon"></i>
+          <span>策略分析</span>
+        </button>
+        <button onclick="showView('documents')" id="nav-documents" class="sidebar-item">
+          <i class="ri-file-list-3-line sidebar-item-icon"></i>
+          <span>文书生成</span>
+        </button>
+
+        <div id="nav-admin-group" class="hidden">
+          <div class="sidebar-section-label mt-5">系统管理</div>
+          <button onclick="showView('admin-monitor')" id="nav-admin-monitor" class="sidebar-item">
+            <i class="ri-pulse-line sidebar-item-icon"></i>
+            <span>数据监控</span>
+          </button>
+          <button onclick="showView('admin-users')" id="nav-admin-users" class="sidebar-item">
+            <i class="ri-group-line sidebar-item-icon"></i>
+            <span>用户管理</span>
+          </button>
+          <button onclick="showView('admin-stats')" id="nav-admin-stats" class="sidebar-item">
+            <i class="ri-bar-chart-2-line sidebar-item-icon"></i>
+            <span>数据统计</span>
+          </button>
+          <button onclick="showView('admin-backup')" id="nav-admin-backup" class="sidebar-item">
+            <i class="ri-database-2-line sidebar-item-icon"></i>
+            <span>备份恢复</span>
+          </button>
+          <button onclick="showView('admin-llm')" id="nav-admin-llm" class="sidebar-item">
+            <i class="ri-robot-line sidebar-item-icon"></i>
+            <span>模型配置</span>
+          </button>
+        </div>
+      </nav>
+
+      <!-- User Card (bottom) -->
+      <div class="sidebar-user">
+        <div class="sidebar-user-card">
+          <div class="avatar" id="user-avatar">A</div>
+          <div class="flex-1 min-w-0">
+            <div id="user-name" class="text-sm font-semibold text-gray-100 truncate"></div>
+            <div id="user-role" class="text-xs text-gray-500"></div>
+          </div>
+          <button onclick="logout()" class="logout-btn" title="退出登录">
+            <i class="ri-logout-box-r-line"></i>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ── RIGHT CONTENT AREA ── -->
+    <div class="content-area">
+
+      <!-- ═══════════ CASES VIEW ═══════════ -->
+      <div id="view-cases" class="content-panel">
+        <div class="content-header">
+          <div>
+            <h2 class="content-title">案件管理</h2>
+            <p class="content-subtitle">管理和查看您的所有案件资料</p>
+          </div>
+          <button onclick="showCaseForm()" class="btn-primary">
+            <i class="ri-add-line"></i> 新建案件
+          </button>
+        </div>
+        <div id="case-list" class="grid gap-4 md:grid-cols-2 xl:grid-cols-3"></div>
+        <div id="case-empty" class="hidden empty-state">
+          <div class="empty-state-icon">
+            <i class="ri-folder-open-line text-3xl text-gray-600"></i>
+          </div>
+          <h3 class="text-gray-400 font-semibold mb-2">暂无案件</h3>
+          <p class="text-gray-600 text-sm mb-5">点击"新建案件"按钮创建您的第一个案件</p>
+          <button onclick="showCaseForm()" class="btn-secondary">
+            <i class="ri-add-line"></i> 立即创建
+          </button>
+        </div>
+
+        <!-- ── Case Detail with Tabs ── -->
+        <div id="case-detail-wrapper" class="hidden">
+          <div class="form-panel">
+            <!-- Header -->
+            <div class="flex items-center justify-between mb-5">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
+                  <i class="ri-folder-info-line text-xl text-blue-500"></i>
+                </div>
+                <div>
+                  <h3 class="text-lg font-bold" id="detail-case-title"></h3>
+                  <p class="text-xs text-gray-500" id="detail-case-meta"></p>
+                </div>
+              </div>
+              <div class="flex items-center gap-2">
+                <button onclick="deleteCaseFromDetail()" class="btn-ghost danger text-xs"><i class="ri-delete-bin-line"></i> 删除案件</button>
+                <button onclick="hideCaseDetail()" class="btn-ghost"><i class="ri-close-line text-xl"></i></button>
+              </div>
+            </div>
+
+            <!-- Tab Bar -->
+            <div class="flex gap-1 mb-5 border-b border-gray-200">
+              <button onclick="switchDetailTab('info')" class="detail-tab active" data-tab="info">
+                <i class="ri-information-line"></i> 案件信息
+              </button>
+              <button onclick="switchDetailTab('materials')" class="detail-tab" data-tab="materials">
+                <i class="ri-attachment-line"></i> 案件材料
+                <span id="records-count" class="text-xs bg-gray-100 px-1.5 py-0.5 rounded-full ml-1">0</span>
+              </button>
+            </div>
+
+            <!-- Tab: Case Info (editable) -->
+            <div id="detail-tab-info">
+              <form id="case-edit-form" onsubmit="submitCaseEdit(event)" class="space-y-4">
+                <div class="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <label class="form-label">案件名称 *</label>
+                    <input name="title" required class="form-input" id="edit-title">
+                  </div>
+                  <div>
+                    <label class="form-label">案件类型 *</label>
+                    <select name="case_type" required class="form-input" id="edit-case_type">
+                      <option value="civil">民事</option>
+                      <option value="criminal">刑事</option>
+                      <option value="administrative">行政</option>
+                      <option value="commercial">商事</option>
+                      <option value="labor">劳动争议</option>
+                      <option value="intellectual_property">知识产权</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="form-label">受理法院</label>
+                    <input name="court_name" class="form-input" id="edit-court_name">
+                  </div>
+                  <div>
+                    <label class="form-label">我方立场 *</label>
+                    <select name="our_role" required class="form-input" id="edit-our_role">
+                      <option value="plaintiff">原告</option>
+                      <option value="defendant">被告</option>
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <label class="form-label">案件事实概要 *</label>
+                  <textarea name="case_facts" required rows="4" class="form-input" id="edit-case_facts"></textarea>
+                </div>
+                <div class="grid md:grid-cols-2 gap-4">
+                  <div><label class="form-label">我方诉讼请求 / 答辩意见</label>
+                    <textarea name="our_claims" rows="3" class="form-input" id="edit-our_claims"></textarea></div>
+                  <div><label class="form-label">对方已知诉讼请求 / 答辩意见</label>
+                    <textarea name="opposing_claims" rows="3" class="form-input" id="edit-opposing_claims"></textarea></div>
+                </div>
+                <div class="grid md:grid-cols-2 gap-4">
+                  <div><label class="form-label">我方证据清单</label>
+                    <textarea name="our_evidence" rows="3" class="form-input" id="edit-our_evidence"></textarea></div>
+                  <div><label class="form-label">对方已知证据</label>
+                    <textarea name="opposing_evidence" rows="3" class="form-input" id="edit-opposing_evidence"></textarea></div>
+                </div>
+                <div class="grid md:grid-cols-2 gap-4">
+                  <div><label class="form-label">我方法律依据</label>
+                    <textarea name="our_legal_basis" rows="3" class="form-input" id="edit-our_legal_basis"></textarea></div>
+                  <div><label class="form-label">对方已知法律依据</label>
+                    <textarea name="opposing_legal_basis" rows="3" class="form-input" id="edit-opposing_legal_basis"></textarea></div>
+                </div>
+                <div class="grid md:grid-cols-2 gap-4">
+                  <div><label class="form-label">法官审判风格</label>
+                    <textarea name="judge_tendencies" rows="2" class="form-input" id="edit-judge_tendencies"></textarea></div>
+                  <div><label class="form-label">其他补充信息</label>
+                    <textarea name="additional_context" rows="2" class="form-input" id="edit-additional_context"></textarea></div>
+                </div>
+                <div class="flex justify-end gap-3 pt-3 border-t border-gray-200">
+                  <button type="submit" class="btn-primary"><i class="ri-save-line"></i> 保存修改</button>
+                </div>
+              </form>
+            </div>
+
+            <!-- Tab: Materials -->
+            <div id="detail-tab-materials" class="hidden">
+              <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-2">
+                  <i class="ri-attachment-line text-amber-600"></i>
+                  <span class="font-semibold">案件材料</span>
+                </div>
+                <button onclick="showRecordForm()" class="btn-secondary text-xs">
+                  <i class="ri-add-line"></i> 添加材料
+                </button>
+              </div>
+
+              <div id="record-form-wrapper" class="hidden mb-4">
+                <div class="bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-3">
+                  <div class="grid md:grid-cols-2 gap-3">
+                    <div>
+                      <label class="form-label">材料标题 *</label>
+                      <input id="record-title" class="form-input" placeholder="如：借款合同、第一次庭审笔录">
+                    </div>
+                    <div>
+                      <label class="form-label">材料类型</label>
+                      <select id="record-type" class="form-input">
+                        <option value="complaint">起诉状/答辩状</option>
+                        <option value="evidence">证据材料</option>
+                        <option value="contract">合同/协议</option>
+                        <option value="hearing">庭审笔录</option>
+                        <option value="ruling">裁定/判决书</option>
+                        <option value="letter">律师函/通知</option>
+                        <option value="other">其他材料</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div>
+                    <label class="form-label">上传文件 <span class="text-gray-600">(.docx / .txt / .md / .pdf)</span></label>
+                    <div class="file-upload-area" onclick="document.getElementById('record-file').click()">
+                      <input type="file" id="record-file" accept=".docx,.txt,.md,.pdf" class="hidden" onchange="onRecordFileChange(this)">
+                      <i class="ri-upload-cloud-2-line text-2xl text-gray-500 mb-1"></i>
+                      <span id="record-file-label" class="text-sm text-gray-500">点击选择文件或拖放</span>
+                    </div>
+                  </div>
+                  <div>
+                    <label class="form-label">或直接输入文字内容</label>
+                    <textarea id="record-content" rows="4" class="form-input" placeholder="粘贴或输入材料内容..."></textarea>
+                  </div>
+                  <div class="flex justify-end gap-2">
+                    <button onclick="hideRecordForm()" class="btn-ghost text-sm">取消</button>
+                    <button onclick="submitRecord()" class="btn-primary text-sm"><i class="ri-save-line"></i> 保存材料</button>
+                  </div>
+                </div>
+              </div>
+
+              <div id="records-list" class="space-y-2"></div>
+              <div id="records-empty" class="text-center py-8 text-gray-600">
+                <i class="ri-file-list-3-line text-2xl mb-2 block"></i>
+                <p class="text-sm">暂无案件材料，添加材料可提升模拟和文书生成的精准度</p>
+              </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="flex gap-3 pt-4 mt-4 border-t border-gray-200">
+              <button onclick="startSimFromDetail()" class="btn-primary text-sm flex-1 justify-center">
+                <i class="ri-government-line"></i> 进入模拟
+              </button>
+              <button onclick="startAnalysisFromDetail()" class="btn-secondary text-sm flex-1 justify-center">
+                <i class="ri-brain-line"></i> 策略分析
+              </button>
+              <button onclick="startDocGenFromDetail()" class="btn-secondary text-sm flex-1 justify-center">
+                <i class="ri-file-list-3-line"></i> 文书生成
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div id="case-form-wrapper" class="hidden">
+          <div class="form-panel">
+            <div class="flex items-center justify-between mb-6">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center">
+                  <i class="ri-file-add-line text-xl text-amber-600"></i>
+                </div>
+                <div>
+                  <h3 class="text-lg font-bold">录入案件信息</h3>
+                  <p class="text-xs text-gray-500">请尽量详细填写以获得更精准的AI分析</p>
+                </div>
+              </div>
+              <button onclick="hideCaseForm()" class="btn-ghost">
+                <i class="ri-close-line text-xl"></i>
+              </button>
+            </div>
+            <form id="case-form" onsubmit="submitCase(event)" class="space-y-5">
+              <div class="grid md:grid-cols-2 gap-4">
+                <div>
+                  <label class="form-label">案件名称 *</label>
+                  <input name="title" required class="form-input" placeholder="如：张三诉李四合同纠纷案">
+                </div>
+                <div>
+                  <label class="form-label">案件类型 *</label>
+                  <select name="case_type" required class="form-input">
+                    <option value="civil">民事</option>
+                    <option value="criminal">刑事</option>
+                    <option value="administrative">行政</option>
+                    <option value="commercial">商事</option>
+                    <option value="labor">劳动争议</option>
+                    <option value="intellectual_property">知识产权</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="form-label">受理法院</label>
+                  <input name="court_name" class="form-input" placeholder="如：北京市朝阳区人民法院">
+                </div>
+                <div>
+                  <label class="form-label">我方立场 *</label>
+                  <select name="our_role" required class="form-input">
+                    <option value="plaintiff">原告</option>
+                    <option value="defendant">被告</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label class="form-label">案件事实概要 *</label>
+                <textarea name="case_facts" required rows="5" class="form-input" placeholder="详细描述案件的来龙去脉、关键时间线和重要事实..."></textarea>
+              </div>
+              <div class="grid md:grid-cols-2 gap-4">
+                <div><label class="form-label">我方诉讼请求 / 答辩意见</label>
+                  <textarea name="our_claims" rows="3" class="form-input" placeholder="逐条列出..."></textarea></div>
+                <div><label class="form-label">对方已知诉讼请求 / 答辩意见</label>
+                  <textarea name="opposing_claims" rows="3" class="form-input" placeholder="如已知..."></textarea></div>
+              </div>
+              <div class="grid md:grid-cols-2 gap-4">
+                <div><label class="form-label">我方证据清单</label>
+                  <textarea name="our_evidence" rows="3" class="form-input" placeholder="列出主要证据..."></textarea></div>
+                <div><label class="form-label">对方已知证据</label>
+                  <textarea name="opposing_evidence" rows="3" class="form-input" placeholder="如已知..."></textarea></div>
+              </div>
+              <div class="grid md:grid-cols-2 gap-4">
+                <div><label class="form-label">我方法律依据</label>
+                  <textarea name="our_legal_basis" rows="3" class="form-input" placeholder="引用法律条文..."></textarea></div>
+                <div><label class="form-label">对方已知法律依据</label>
+                  <textarea name="opposing_legal_basis" rows="3" class="form-input" placeholder="对方可能引用..."></textarea></div>
+              </div>
+              <div class="grid md:grid-cols-2 gap-4">
+                <div><label class="form-label">法官审判风格（如已知）</label>
+                  <textarea name="judge_tendencies" rows="2" class="form-input" placeholder="审判偏好..."></textarea></div>
+                <div><label class="form-label">其他补充信息</label>
+                  <textarea name="additional_context" rows="2" class="form-input" placeholder="其他信息..."></textarea></div>
+              </div>
+              <div class="flex justify-end gap-3 pt-3 border-t border-gray-200">
+                <button type="button" onclick="hideCaseForm()" class="btn-secondary">取消</button>
+                <button type="submit" class="btn-primary"><i class="ri-save-line"></i> 保存案件</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══════════ SIMULATION VIEW ═══════════ -->
+      <div id="view-simulate" class="content-panel hidden">
+        <div id="sim-setup">
+          <div class="content-header">
+            <div>
+              <h2 class="content-title">庭审模拟</h2>
+              <p class="content-subtitle">选择案件和模拟模式，开始AI庭审演练</p>
+            </div>
+          </div>
+          <div class="grid md:grid-cols-2 gap-8">
+            <div>
+              <label class="form-label">选择案件</label>
+              <select id="sim-case-select" class="form-input" onchange="onSimCaseChange()">
+                <option value="">-- 请选择案件 --</option>
+              </select>
+              <p class="text-xs text-gray-600 mt-2"><i class="ri-information-line"></i> 选择已录入的案件进行模拟</p>
+            </div>
+            <div>
+              <label class="form-label">模拟模式</label>
+              <div class="grid grid-cols-2 gap-3 mt-1">
+                <button onclick="selectMode('adversarial')" class="mode-card" data-mode="adversarial">
+                  <div class="mode-icon bg-red-50"><i class="ri-sword-line text-2xl text-red-500"></i></div>
+                  <span class="font-semibold text-sm">对抗辩论</span>
+                  <span class="text-xs text-gray-500">AI 扮演对方律师</span>
+                </button>
+                <button onclick="selectMode('full_trial')" class="mode-card" data-mode="full_trial">
+                  <div class="mode-icon bg-amber-50"><i class="ri-government-line text-2xl text-amber-600"></i></div>
+                  <span class="font-semibold text-sm">完整庭审</span>
+                  <span class="text-xs text-gray-500">法官 + 对方律师</span>
+                </button>
+                <button onclick="selectMode('witness_exam')" class="mode-card" data-mode="witness_exam">
+                  <div class="mode-icon bg-blue-50"><i class="ri-user-voice-line text-2xl text-blue-500"></i></div>
+                  <span class="font-semibold text-sm">证人质询</span>
+                  <span class="text-xs text-gray-500">模拟证人应答</span>
+                </button>
+                <button onclick="selectMode('argument_analysis')" class="mode-card" data-mode="argument_analysis">
+                  <div class="mode-icon bg-green-50"><i class="ri-lightbulb-line text-2xl text-green-500"></i></div>
+                  <span class="font-semibold text-sm">即时分析</span>
+                  <span class="text-xs text-gray-500">论点实时点评</span>
+                </button>
+              </div>
+            </div>
+          </div>
+          <!-- History Sidebar -->
+          <div id="sim-history-panel" class="mt-6 hidden">
+            <div class="section-header">
+              <i class="ri-history-line text-blue-500"></i> 历史模拟记录
+            </div>
+            <div id="sim-history-list" class="space-y-2 max-h-48 overflow-y-auto"></div>
+          </div>
+
+          <div class="mt-8">
+            <button onclick="startSimulation()" id="btn-start-sim" disabled class="btn-primary px-8 py-3">
+              <i class="ri-play-line"></i> 开始模拟
+            </button>
+            <span id="sim-context-hint" class="text-xs text-green-600 ml-3 hidden">
+              <i class="ri-sparkling-line"></i> 已加载庭审记录与历史数据，模拟将更精准
+            </span>
+          </div>
+        </div>
+
+        <div id="sim-chat" class="hidden chat-layout">
+          <div class="flex items-center justify-between mb-4 pb-4 border-b border-gray-200">
+            <div class="flex items-center gap-3">
+              <button onclick="backToSetup()" class="btn-ghost"><i class="ri-arrow-left-line text-lg"></i></button>
+              <div>
+                <h2 class="text-lg font-bold" id="sim-title">庭审模拟</h2>
+                <span id="sim-mode-badge" class="text-xs text-gray-500"></span>
+              </div>
+            </div>
+            <button onclick="clearChat()" class="btn-ghost danger"><i class="ri-delete-bin-line"></i> 清空</button>
+          </div>
+          <div id="chat-messages" class="chat-container space-y-4 mb-4"></div>
+          <div class="chat-input-area">
+            <form onsubmit="sendMessage(event)" class="flex gap-3">
+              <textarea id="chat-input" rows="2" class="form-input flex-1 resize-none" placeholder="输入你的庭审发言..." onkeydown="handleChatKey(event)"></textarea>
+              <button type="submit" id="btn-send" class="btn-primary self-end px-6"><i class="ri-send-plane-2-line"></i></button>
+            </form>
+            <p class="text-xs text-gray-600 mt-1.5"><i class="ri-keyboard-line"></i> Ctrl+Enter 发送</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══════════ ANALYSIS VIEW ═══════════ -->
+      <div id="view-analysis" class="content-panel hidden">
+        <div class="content-header">
+          <div>
+            <h2 class="content-title">案件策略分析</h2>
+            <p class="content-subtitle">AI 深度分析案件，生成专业策略建议</p>
+          </div>
+        </div>
+        <div class="grid md:grid-cols-3 gap-6">
+          <div>
+            <label class="form-label">选择案件</label>
+            <select id="analysis-case-select" class="form-input" onchange="onAnalysisCaseChange()">
+              <option value="">-- 请选择案件 --</option>
+            </select>
+          </div>
+          <div class="md:col-span-2">
+            <label class="form-label">分析类型</label>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-1">
+              <button onclick="selectAnalysis('comprehensive')" class="analysis-card active" data-analysis="comprehensive">
+                <i class="ri-pie-chart-line text-xl text-purple-500"></i><span class="text-sm font-medium">全面分析</span>
+              </button>
+              <button onclick="selectAnalysis('weakness')" class="analysis-card" data-analysis="weakness">
+                <i class="ri-alert-line text-xl text-red-500"></i><span class="text-sm font-medium">风险识别</span>
+              </button>
+              <button onclick="selectAnalysis('strategy')" class="analysis-card" data-analysis="strategy">
+                <i class="ri-route-line text-xl text-blue-500"></i><span class="text-sm font-medium">庭审策略</span>
+              </button>
+              <button onclick="selectAnalysis('questions')" class="analysis-card" data-analysis="questions">
+                <i class="ri-question-line text-xl text-amber-600"></i><span class="text-sm font-medium">问题预测</span>
+              </button>
+            </div>
+          </div>
+        </div>
+        <!-- Analysis History -->
+        <div id="analysis-history-panel" class="mt-6 hidden">
+          <div class="section-header">
+            <i class="ri-history-line text-purple-500"></i> 历史分析记录
+            <span class="text-xs text-gray-500 ml-2">新分析将自动对比历史，给出改进建议</span>
+          </div>
+          <div id="analysis-history-list" class="space-y-2 max-h-48 overflow-y-auto"></div>
+        </div>
+
+        <div class="mt-8">
+          <button onclick="runAnalysis()" id="btn-analyze" class="btn-primary px-8 py-3">
+            <i class="ri-brain-line"></i> 开始分析
+          </button>
+          <span id="analysis-context-hint" class="text-xs text-green-600 ml-3 hidden">
+            <i class="ri-sparkling-line"></i> 将结合庭审记录与历史分析生成更全面的报告
+          </span>
+        </div>
+        <div id="analysis-result" class="mt-8 hidden">
+          <div class="form-panel">
+            <div class="flex items-center gap-3 mb-5 pb-3 border-b border-gray-200">
+              <div class="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center">
+                <i class="ri-file-text-line text-amber-600"></i>
+              </div>
+              <h3 class="font-bold">分析报告</h3>
+            </div>
+            <div id="analysis-content" class="prose-dark"></div>
+          </div>
+        </div>
+        <div id="analysis-loading" class="mt-8 hidden text-center py-16">
+          <div class="loading-spinner mx-auto mb-5"></div>
+          <p class="text-gray-400 font-medium">AI 正在深度分析案件</p>
+          <p class="text-gray-600 text-sm mt-1">这可能需要一些时间，请耐心等待...</p>
+        </div>
+      </div>
+
+      <!-- ═══════════ DOCUMENT GENERATION VIEW ═══════════ -->
+      <div id="view-documents" class="content-panel hidden">
+        <div class="content-header">
+          <div>
+            <h2 class="content-title">文书生成</h2>
+            <p class="content-subtitle">AI 根据案件信息、材料和分析自动生成开庭所需文书</p>
+          </div>
+        </div>
+        <div class="grid md:grid-cols-3 gap-6">
+          <div>
+            <label class="form-label">选择案件</label>
+            <select id="doc-case-select" class="form-input" onchange="onDocCaseChange()">
+              <option value="">-- 请选择案件 --</option>
+            </select>
+          </div>
+          <div class="md:col-span-2">
+            <label class="form-label">文书类型</label>
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-3 mt-1">
+              <button onclick="selectDocType('evidence_list')" class="analysis-card active" data-doctype="evidence_list">
+                <i class="ri-list-check-2 text-xl text-blue-500"></i><span class="text-sm font-medium">证据清单</span>
+              </button>
+              <button onclick="selectDocType('legal_opinion')" class="analysis-card" data-doctype="legal_opinion">
+                <i class="ri-draft-line text-xl text-purple-500"></i><span class="text-sm font-medium">代理词/辩护词</span>
+              </button>
+              <button onclick="selectDocType('cross_exam')" class="analysis-card" data-doctype="cross_exam">
+                <i class="ri-question-answer-line text-xl text-red-500"></i><span class="text-sm font-medium">质证意见</span>
+              </button>
+              <button onclick="selectDocType('pretrial_checklist')" class="analysis-card" data-doctype="pretrial_checklist">
+                <i class="ri-checkbox-multiple-line text-xl text-green-500"></i><span class="text-sm font-medium">庭前准备清单</span>
+              </button>
+              <button onclick="selectDocType('debate_outline')" class="analysis-card" data-doctype="debate_outline">
+                <i class="ri-mind-map text-xl text-amber-600"></i><span class="text-sm font-medium">辩论提纲</span>
+              </button>
+              <button onclick="selectDocType('closing_statement')" class="analysis-card" data-doctype="closing_statement">
+                <i class="ri-chat-quote-line text-xl text-indigo-500"></i><span class="text-sm font-medium">结辩词</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Generated Docs History -->
+        <div id="doc-history-panel" class="mt-6 hidden">
+          <div class="section-header">
+            <i class="ri-history-line text-blue-500"></i> 已生成文书
+          </div>
+          <div id="doc-history-list" class="space-y-2 max-h-60 overflow-y-auto"></div>
+        </div>
+
+        <div class="mt-8">
+          <button onclick="generateDocument()" id="btn-gen-doc" class="btn-primary px-8 py-3">
+            <i class="ri-quill-pen-line"></i> 生成文书
+          </button>
+        </div>
+        <div id="doc-result" class="mt-8 hidden">
+          <div class="form-panel">
+            <div class="flex items-center justify-between mb-5 pb-3 border-b border-gray-200">
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
+                  <i class="ri-file-text-line text-blue-600"></i>
+                </div>
+                <h3 class="font-bold" id="doc-result-title">生成的文书</h3>
+              </div>
+              <button onclick="copyDocContent()" class="btn-secondary text-xs"><i class="ri-file-copy-line"></i> 复制内容</button>
+            </div>
+            <div id="doc-content" class="prose-dark"></div>
+          </div>
+        </div>
+        <div id="doc-loading" class="mt-8 hidden text-center py-16">
+          <div class="loading-spinner mx-auto mb-5"></div>
+          <p class="text-gray-400 font-medium">AI 正在生成文书</p>
+          <p class="text-gray-600 text-sm mt-1">根据案件复杂程度，可能需要较长时间...</p>
+        </div>
+      </div>
+
+      <!-- ═══════════ ADMIN: MONITOR ═══════════ -->
+      <div id="view-admin-monitor" class="content-panel hidden">
+        <div class="content-header">
+          <div>
+            <h2 class="content-title">数据监控</h2>
+            <p class="content-subtitle">系统运行状态与资源概览</p>
+          </div>
+          <button onclick="loadMonitor()" class="btn-secondary"><i class="ri-refresh-line"></i> 刷新</button>
+        </div>
+
+        <!-- DB Health Status -->
+        <div id="db-health-card" class="form-panel mb-6">
+          <div class="flex items-start gap-4">
+            <div id="db-health-dot" class="w-3 h-3 rounded-full bg-gray-300 flex-shrink-0 mt-1.5"></div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="font-semibold text-sm" id="db-health-title">数据库状态</span>
+                <span id="db-health-badge" class="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">检测中</span>
+              </div>
+              <p class="text-xs mt-1 text-gray-500" id="db-health-msg">正在检测...</p>
+              <div id="db-health-detail" class="hidden mt-3 grid grid-cols-2 lg:grid-cols-4 gap-3 text-xs"></div>
+            </div>
+          </div>
+        </div>
+
+        <div id="monitor-cards" class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8"></div>
+        <div class="section-header"><i class="ri-table-line text-gray-400"></i> 数据表详情</div>
+        <div id="monitor-tables" class="form-panel overflow-hidden p-0"></div>
+      </div>
+
+      <!-- ═══════════ ADMIN: USERS ═══════════ -->
+      <div id="view-admin-users" class="content-panel hidden">
+        <div class="content-header">
+          <div>
+            <h2 class="content-title">用户管理</h2>
+            <p class="content-subtitle">用户列表与角色分配</p>
+          </div>
+        </div>
+        <div class="grid lg:grid-cols-3 gap-6">
+          <div class="lg:col-span-2">
+            <div class="section-header"><i class="ri-group-line text-blue-500"></i> 用户列表</div>
+            <div id="users-table" class="form-panel overflow-hidden p-0"></div>
+          </div>
+          <div>
+            <div class="section-header"><i class="ri-user-add-line text-green-500"></i> 添加用户</div>
+            <form id="add-user-form" onsubmit="addUser(event)" class="form-panel space-y-4">
+              <div>
+                <label class="form-label">用户名</label>
+                <input name="username" required class="form-input" placeholder="输入用户名" minlength="2">
+              </div>
+              <div>
+                <label class="form-label">显示名称</label>
+                <input name="display_name" class="form-input" placeholder="显示名称">
+              </div>
+              <div>
+                <label class="form-label">密码</label>
+                <input name="password" type="password" required class="form-input" placeholder="至少6位" minlength="6">
+              </div>
+              <div>
+                <label class="form-label">角色</label>
+                <select name="role" class="form-input">
+                  <option value="user">普通用户</option>
+                  <option value="admin">管理员</option>
+                </select>
+              </div>
+              <button type="submit" class="btn-primary text-sm w-full justify-center">
+                <i class="ri-user-add-line"></i> 创建用户
+              </button>
+              <p id="add-user-error" class="text-red-400 text-xs text-center hidden"></p>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══════════ ADMIN: STATISTICS ═══════════ -->
+      <div id="view-admin-stats" class="content-panel hidden">
+        <div class="content-header">
+          <div>
+            <h2 class="content-title">数据统计</h2>
+            <p class="content-subtitle">用户与案件使用情况分析</p>
+          </div>
+          <button onclick="loadStatistics()" class="btn-secondary"><i class="ri-refresh-line"></i> 刷新</button>
+        </div>
+        <div id="stats-summary" class="grid grid-cols-3 gap-4 mb-8"></div>
+        <div class="grid md:grid-cols-2 gap-6">
+          <div>
+            <div class="section-header"><i class="ri-team-line text-blue-500"></i> 各用户数据</div>
+            <div id="stats-by-user" class="form-panel overflow-hidden p-0"></div>
+          </div>
+          <div>
+            <div class="section-header"><i class="ri-pie-chart-line text-purple-500"></i> 案件类型分布</div>
+            <div id="stats-by-type" class="form-panel overflow-hidden p-0"></div>
+            <div class="section-header mt-6"><i class="ri-time-line text-amber-600"></i> 最近案件</div>
+            <div id="stats-recent" class="form-panel overflow-hidden p-0"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══════════ ADMIN: BACKUP ═══════════ -->
+      <div id="view-admin-backup" class="content-panel hidden">
+        <div class="content-header">
+          <div>
+            <h2 class="content-title">备份恢复</h2>
+            <p class="content-subtitle">数据安全管理与定时备份</p>
+          </div>
+        </div>
+        <div class="grid md:grid-cols-2 gap-6">
+          <div>
+            <div class="section-header">
+              <i class="ri-hard-drive-2-line text-amber-600"></i> 备份文件
+              <button onclick="createBackup()" id="btn-backup" class="btn-primary text-xs" style="margin-left:auto">
+                <i class="ri-download-line"></i> 立即备份
+              </button>
+            </div>
+            <div id="backup-list" class="space-y-2"></div>
+            <div id="backup-empty" class="empty-state py-12">
+              <div class="empty-state-icon" style="width:60px;height:60px">
+                <i class="ri-hard-drive-2-line text-2xl text-gray-600"></i>
+              </div>
+              <p class="text-gray-500 text-sm">暂无备份文件</p>
+            </div>
+          </div>
+          <div>
+            <div class="section-header"><i class="ri-timer-line text-green-500"></i> 定时备份设置</div>
+            <form id="schedule-form" onsubmit="saveSchedule(event)" class="form-panel space-y-4">
+              <div class="flex items-center justify-between">
+                <label class="form-label mb-0">启用定时备份</label>
+                <label class="relative inline-flex items-center cursor-pointer">
+                  <input type="checkbox" id="sched-enabled" class="sr-only peer">
+                  <div class="w-11 h-6 bg-gray-300 peer-focus:ring-2 peer-focus:ring-amber-500/30 rounded-full peer peer-checked:bg-amber-600 transition-colors">
+                    <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform peer-checked:translate-x-5"></div>
+                  </div>
+                </label>
+              </div>
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="form-label">备份时间（时）</label>
+                  <input type="number" id="sched-hour" class="form-input" min="0" max="23" value="2">
+                </div>
+                <div>
+                  <label class="form-label">备份时间（分）</label>
+                  <input type="number" id="sched-minute" class="form-input" min="0" max="59" value="0">
+                </div>
+              </div>
+              <div>
+                <label class="form-label">保留份数</label>
+                <input type="number" id="sched-keep" class="form-input" min="1" max="100" value="7">
+              </div>
+              <button type="submit" class="btn-primary text-sm w-full justify-center">
+                <i class="ri-save-line"></i> 保存设置
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══════════ ADMIN: LLM CONFIG ═══════════ -->
+      <div id="view-admin-llm" class="content-panel hidden">
+        <div class="content-header">
+          <div>
+            <h2 class="content-title">大模型配置</h2>
+            <p class="content-subtitle">选择和配置 AI 大语言模型提供商</p>
+          </div>
+          <button onclick="testLlmConnection()" id="btn-llm-test" class="btn-secondary">
+            <i class="ri-link"></i> 测试连接
+          </button>
+        </div>
+
+        <!-- Current Status Card -->
+        <div id="llm-status-card" class="form-panel mb-6 flex items-center gap-4">
+          <div id="llm-status-dot" class="w-3 h-3 rounded-full bg-gray-300 flex-shrink-0"></div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="font-semibold text-sm" id="llm-status-provider">-</span>
+              <span class="text-xs text-gray-500">·</span>
+              <span class="text-sm text-gray-600" id="llm-status-model">-</span>
+              <span class="text-xs text-gray-500">·</span>
+              <span class="text-xs text-gray-500" id="llm-status-url">-</span>
+            </div>
+            <p class="text-xs mt-0.5" id="llm-status-msg">未检测</p>
+          </div>
+        </div>
+
+        <div class="grid lg:grid-cols-3 gap-6">
+          <!-- Provider Selector -->
+          <div>
+            <div class="section-header"><i class="ri-robot-line text-blue-500"></i> 选择模型</div>
+            <div id="llm-provider-list" class="space-y-2"></div>
+          </div>
+          <!-- Config Form -->
+          <div class="lg:col-span-2">
+            <div class="section-header"><i class="ri-settings-3-line text-amber-600"></i> 连接配置</div>
+            <form id="llm-config-form" onsubmit="saveLlmConfig(event)" class="form-panel space-y-4">
+              <input type="hidden" id="llm-provider" value="ollama">
+              <div class="flex items-center gap-3 mb-4 pb-3 border-b border-gray-200">
+                <div class="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
+                  <i class="ri-robot-line text-xl text-blue-600" id="llm-icon"></i>
+                </div>
+                <div>
+                  <h3 class="font-bold" id="llm-provider-label">Ollama (本地部署)</h3>
+                  <p class="text-xs text-gray-500" id="llm-active-hint"></p>
+                </div>
+              </div>
+              <div class="grid md:grid-cols-2 gap-4">
+                <div>
+                  <label class="form-label">API Base URL</label>
+                  <input id="llm-base-url" class="form-input" placeholder="API 端点地址">
+                </div>
+                <div>
+                  <label class="form-label">模型名称</label>
+                  <div class="relative">
+                    <select id="llm-model" class="form-input pr-8 appearance-none">
+                      <option value="">加载中...</option>
+                    </select>
+                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2 text-gray-400">
+                      <i class="ri-arrow-down-s-line"></i>
+                    </div>
+                  </div>
+                  <input id="llm-model-custom" class="form-input mt-1 hidden" placeholder="或输入自定义模型名称">
+                </div>
+              </div>
+              <div>
+                <label class="form-label">API Key <span id="llm-key-hint" class="text-gray-500 normal-case font-normal"></span></label>
+                <div class="relative">
+                  <input id="llm-api-key" type="password" class="form-input pr-10" placeholder="输入 API 密钥">
+                  <button type="button" onclick="toggleKeyVisibility()" class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                    <i class="ri-eye-line" id="llm-key-eye"></i>
+                  </button>
+                </div>
+              </div>
+              <div class="grid md:grid-cols-2 gap-4">
+                <div>
+                  <label class="form-label">上下文窗口 (tokens)</label>
+                  <input id="llm-ctx" type="number" class="form-input" value="20000" min="1000" max="200000">
+                </div>
+                <div>
+                  <label class="form-label">请求超时 (秒)</label>
+                  <input id="llm-timeout" type="number" class="form-input" value="3600" min="30" max="7200">
+                </div>
+              </div>
+              <div class="flex justify-end gap-3 pt-3 border-t border-gray-200">
+                <button type="button" onclick="testLlmConnection()" class="btn-secondary"><i class="ri-link"></i> 测试连接</button>
+                <button type="submit" class="btn-primary"><i class="ri-save-line"></i> 保存并应用</button>
+              </div>
+              <p id="llm-save-msg" class="text-green-600 text-xs text-center hidden"></p>
+            </form>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

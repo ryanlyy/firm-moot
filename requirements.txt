@@ -1,0 +1,13 @@
+fastapi
+uvicorn[standard]
+openai
+anthropic
+pydantic
+python-dotenv
+jinja2
+httpx
+asyncpg
+python-jose[cryptography]
+bcrypt
+apscheduler
+python-docx

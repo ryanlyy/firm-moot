@@ -1,0 +1,56 @@
+services:
+
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: lawemu
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme_in_production}
+      POSTGRES_DB: lawemu
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lawemu"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ENV: production
+      FIRM_NAME: ${FIRM_NAME:-}
+      DATABASE_URL: postgresql://lawemu:${DB_PASSWORD:-changeme_in_production}@db:5432/lawemu
+      JWT_SECRET: ${JWT_SECRET:-law-emulator-secret-change-in-prod}
+      LLM_MODEL: ${LLM_MODEL:-gpt-oss:20b}
+      LLM_BASE_URL: ${LLM_BASE_URL:-http://10.67.34.44:11434}
+      LLM_REQUEST_TIMEOUT: ${LLM_REQUEST_TIMEOUT:-3600}
+      LLM_CONTEXT_WINDOW: ${LLM_CONTEXT_WINDOW:-20000}
+      HOST: 0.0.0.0
+      PORT: 8000
+      WORKERS: ${WORKERS:-4}
+    volumes:
+      - backups:/app/backups
+    expose:
+      - "8000"
+
+  nginx:
+    image: nginx:alpine
+    restart: unless-stopped
+    depends_on:
+      - app
+    ports:
+      - "${NGINX_PORT:-80}:80"
+    volumes:
+      - ./deploy/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./static:/app/static:ro
+
+volumes:
+  pgdata:
+  backups:
